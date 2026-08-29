@@ -1,0 +1,23 @@
+# 本机 3306 已被已有 MySQL 占用，项目库走 Docker 的 3307。
+services:
+  mysql:
+    image: docker.m.daocloud.io/library/mysql:8.0
+    container_name: ai-cs-mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ai_cs_dev
+      MYSQL_DATABASE: ai_cs
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ai_cs_mysql_data:/var/lib/mysql
+      - ./backend/数据库初始化脚本/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pai_cs_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  ai_cs_mysql_data:

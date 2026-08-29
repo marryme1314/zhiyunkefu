@@ -1,0 +1,25 @@
+.env
+*.env
+!.env.example
+
+# Local toolchain / downloads (never upload)
+tools/**
+!tools/env.bat
+!tools/docker-daemon.json
+
+# Build outputs
+backend/target/
+backend/data/
+backend/vector-store/
+frontend/node_modules/
+frontend/dist/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+*.log
+.DS_Store
+Thumbs.db
+*.zip
+*.exe
