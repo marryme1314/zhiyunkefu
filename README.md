@@ -10,7 +10,7 @@
 |---|---|
 | `backend/` | Spring Boot 3 / Java 17 |
 | `frontend/` | Vue 3 + TypeScript + Vite |
-| `docs/` | API、架构、库表、业务流程 |
+| `docs/` | API、架构、库表、业务流程；`docs/screenshots/` 为运行截图 |
 | `项目说明.md` | 技术选型与实现说明 |
 | `运行指南.md` | 本机启动步骤 |
 | `.env.example` | 环境变量模板（**不要**提交真实 `.env`） |
@@ -23,6 +23,20 @@
 - 基于知识库检索生成回答，并展示参考资料
 - SSE 流式输出，支持停止、重试、追问建议
 - 回答点赞 / 点踩；管理员查看统计、会话与用户
+
+## 运行截图
+
+### 登录
+
+![登录页](docs/screenshots/login.png)
+
+### 对话
+
+![对话页](docs/screenshots/chat.png)
+
+### 管理后台
+
+![管理后台](docs/screenshots/admin.png)
 
 ## 快速启动（Windows）
 
