@@ -39,18 +39,93 @@
 
 `GET /api/me`
 
-## 4. 会话
+响应示例：
 
-- `POST /api/sessions` 新建
-- `GET /api/sessions` 列表（按更新时间倒序）
-- `GET /api/sessions/{id}` 详情，包含完整消息与 `sources`
+```json
+{ "code": 0, "data": { "id": 1, "email": "a@test.com", "phone": null, "role": "USER" } }
+```
+
+## 4. 会话历史查询
+
+### 4.1 新建会话
+
+`POST /api/sessions`
+
+响应：
+
+```json
+{ "code": 0, "data": { "id": 1, "title": "新会话", "createdAt": "2026-08-30T15:00:00", "updatedAt": "2026-08-30T15:00:00" } }
+```
+
+### 4.2 会话列表
+
+`GET /api/sessions`
+
+```json
+{ "code": 0, "data": [{ "id": 1, "title": "专业版怎么收费？", "updatedAt": "2026-08-30T15:01:00" }] }
+```
+
+### 4.3 会话详情（含完整问答历史）
+
+`GET /api/sessions/{id}`
+
+```json
+{
+  "code": 0,
+  "data": {
+    "id": 1,
+    "title": "专业版怎么收费？",
+    "messages": [
+      {
+        "id": 10,
+        "role": "USER",
+        "content": "专业版怎么收费？",
+        "intent": "PRODUCT",
+        "createdAt": "2026-08-30T15:00:10"
+      },
+      {
+        "id": 11,
+        "role": "ASSISTANT",
+        "content": "专业版按年订阅，价格以产品介绍文档为准。",
+        "sources": [
+          { "documentName": "公司产品介绍.txt", "summary": "专业版……", "score": 0.81 }
+        ],
+        "suggestions": ["专业版和企业版有什么区别？"],
+        "createdAt": "2026-08-30T15:00:12"
+      }
+    ]
+  }
+}
+```
+
+仅能查询当前登录用户自己的会话；管理员走 `/api/admin/sessions/{id}`。
 
 ## 5. 上传知识库文档
 
 `POST /api/knowledge/documents`  
-`Content-Type: multipart/form-data`，字段 `file`，可选 `collection`：`AUTO` / `PRODUCT` / `AFTER_SALES` / `FAQ` / `GENERAL`。未传或 `AUTO` 时按文件名推断分区。
+`Content-Type: multipart/form-data`
 
-支持 `.txt` / `.md` / `.pdf` / `.docx` / `.doc`。上传后立即返回 `PROCESSING`，后台解析并向量化，随后变为 `READY` 或 `FAILED`。列表项含 `collection`、`collectionLabel`。
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `file` | 文件 | 必填，`.txt` / `.md` / `.pdf` / `.docx` / `.doc` |
+| `collection` | 字符串 | 可选：`AUTO` / `PRODUCT` / `AFTER_SALES` / `FAQ` / `GENERAL`。未传或 `AUTO` 时按文件名推断分区 |
+
+立即返回：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "id": 3,
+    "filename": "退换货政策.txt",
+    "status": "PROCESSING",
+    "collection": "AFTER_SALES",
+    "collectionLabel": "售后"
+  }
+}
+```
+
+后台解析并向量化后变为 `READY` 或 `FAILED`。可用 `GET /api/knowledge/documents` 轮询状态。
 
 ## 6. 知识库列表 / 删除
 
@@ -96,15 +171,23 @@ data: {"messageId":12}
 
 检索会按意图优先对应知识库分区，分区无结果再搜全库。
 
-## 8. 反馈
+## 8. 反馈提交
 
 `POST /api/messages/{id}/feedback`
 
+请求：
+
 ```json
-{ "type": "LIKE", "comment": "可选文字" }
+{ "type": "LIKE", "comment": "回答准确" }
 ```
 
-`type` 为 `LIKE` 或 `DISLIKE`。
+`type` 为 `LIKE` 或 `DISLIKE`。同一用户对同一条助手消息重复提交会覆盖。
+
+响应：
+
+```json
+{ "code": 0, "message": "ok", "data": { "id": 1, "type": "LIKE", "comment": "回答准确" } }
+```
 
 ## 9. 管理后台（需 ADMIN）
 

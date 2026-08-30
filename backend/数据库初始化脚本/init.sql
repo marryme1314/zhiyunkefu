@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     email         VARCHAR(128) NULL,
     phone         VARCHAR(32)  NULL,
     password_hash VARCHAR(255) NOT NULL,
+    role          VARCHAR(16)  NOT NULL DEFAULT 'USER',
     created_at    DATETIME     NOT NULL,
     UNIQUE KEY uk_users_email (email),
     UNIQUE KEY uk_users_phone (phone)
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS messages (
     role        VARCHAR(16)  NOT NULL,
     content     MEDIUMTEXT   NOT NULL,
     sources_json TEXT        NULL,
+    intent      VARCHAR(32)  NULL,
     created_at  DATETIME     NOT NULL,
     KEY idx_messages_session (session_id),
     CONSTRAINT fk_messages_session FOREIGN KEY (session_id) REFERENCES chat_sessions (id)
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS knowledge_documents (
     id            BIGINT PRIMARY KEY AUTO_INCREMENT,
     filename      VARCHAR(255) NOT NULL,
     content_type  VARCHAR(32)  NOT NULL,
+    kb_collection VARCHAR(32)  NOT NULL DEFAULT 'GENERAL',
     status        VARCHAR(16)  NOT NULL,
     error_message VARCHAR(500) NULL,
     created_at    DATETIME     NOT NULL,
@@ -64,3 +67,7 @@ CREATE TABLE IF NOT EXISTS knowledge_chunks (
     KEY idx_chunks_doc (document_id),
     CONSTRAINT fk_chunks_doc FOREIGN KEY (document_id) REFERENCES knowledge_documents (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 初始业务数据由应用启动逻辑写入，不在此硬编码密码哈希：
+-- 1) AdminBootstrap：管理员 admin@company.com / Admin123!
+-- 2) KnowledgeBootstrap：自动导入 src/main/resources/seed/ 下示例文档并向量化
