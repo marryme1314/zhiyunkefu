@@ -6,7 +6,8 @@ call "%~dp0tools\env.bat"
 
 set "OLLAMA_ROOT=%~dp0tools\Ollama"
 set "OLLAMA_MODELS=%~dp0tools\Ollama\models"
-set "OLLAMA_HOST=127.0.0.1:11434"
+rem 0.0.0.0：本机与 Docker 容器（host.docker.internal）都能访问
+set "OLLAMA_HOST=0.0.0.0:11434"
 if exist "%OLLAMA_ROOT%\ollama.exe" set "PATH=%OLLAMA_ROOT%;%PATH%"
 
 if not exist "%OLLAMA_ROOT%\ollama.exe" (

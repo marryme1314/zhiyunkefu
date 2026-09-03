@@ -1,5 +1,6 @@
 # 一键部署：MySQL + Qdrant + Redis + 后端 + Nginx 前端
-# 使用前复制 .env.example 为 .env，并改掉 JWT_SECRET / ADMIN_PASSWORD / MOONSHOT_API_KEY
+# 使用前：cp .env.example .env 并填写 MOONSHOT_API_KEY（或改 LLM_PROVIDER=ollama）
+# 构建前必须本机已有 backend/target/*.jar 与 frontend/dist（见 一键部署.bat / deploy.sh / README）
 services:
   mysql:
     image: docker.m.daocloud.io/library/mysql:8.0
@@ -15,7 +16,7 @@ services:
       - ai_cs_mysql_data:/var/lib/mysql
       - ./backend/数据库初始化脚本/init.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pai_cs_dev"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_PASSWORD:-ai_cs_dev}"]
       interval: 5s
       timeout: 5s
       retries: 20
