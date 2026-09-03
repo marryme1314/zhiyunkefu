@@ -22,6 +22,7 @@ public class KnowledgeBootstrap implements ApplicationRunner {
         try {
             knowledgeService.importSeedIfEmpty();
             knowledgeService.reembedIfDimensionMismatch();
+            knowledgeService.syncVectorStore();
         } catch (Exception e) {
             System.err.println("[WARN] 启动时未能自动向量化示例知识库: " + e.getMessage());
             System.err.println("[WARN] 本机模式请先运行 启动Ollama.bat");

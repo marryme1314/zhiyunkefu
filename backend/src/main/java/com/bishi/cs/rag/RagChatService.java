@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDate;
@@ -107,8 +108,13 @@ public class RagChatService {
         executor.submit(DelegatingSecurityContextRunnable.create(
                 () -> runStream(emitter, response, session, historyBefore, q, intent, alive),
                 context
-        ));
+        )        );
         return emitter;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        executor.shutdownNow();
     }
 
     private List<ChatMessage> withoutTrailingUser(List<ChatMessage> all) {

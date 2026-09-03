@@ -3,6 +3,7 @@ package com.bishi.cs.knowledge;
 import com.bishi.cs.common.ApiException;
 import com.bishi.cs.llm.LlmGateway;
 import com.bishi.cs.rag.KnowledgeRouter;
+import com.bishi.cs.rag.QdrantClient;
 import com.bishi.cs.rag.VectorIndex;
 import com.bishi.cs.rag.VectorMath;
 import org.springframework.core.io.Resource;
@@ -15,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import jakarta.annotation.PreDestroy;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,6 +30,7 @@ public class KnowledgeService {
     private final LlmGateway llm;
     private final VectorMath math;
     private final VectorIndex vectorIndex;
+    private final QdrantClient qdrant;
     private final ExecutorService workers = Executors.newFixedThreadPool(2);
 
     public KnowledgeService(KnowledgeDocumentRepository documents,
@@ -35,7 +39,8 @@ public class KnowledgeService {
                             DocumentParser parser,
                             LlmGateway llm,
                             VectorMath math,
-                            VectorIndex vectorIndex) {
+                            VectorIndex vectorIndex,
+                            QdrantClient qdrant) {
         this.documents = documents;
         this.chunks = chunks;
         this.indexer = indexer;
@@ -43,6 +48,7 @@ public class KnowledgeService {
         this.llm = llm;
         this.math = math;
         this.vectorIndex = vectorIndex;
+        this.qdrant = qdrant;
     }
 
     public List<Map<String, Object>> list() {
@@ -78,6 +84,7 @@ public class KnowledgeService {
     public void delete(Long id) {
         KnowledgeDocument doc = documents.findById(id).orElseThrow(() -> new ApiException(404, "文档不存在"));
         chunks.deleteByDocumentId(doc.getId());
+        qdrant.deleteDocument(doc.getId());
         documents.delete(doc);
         vectorIndex.reload();
     }
@@ -121,6 +128,16 @@ public class KnowledgeService {
         } finally {
             vectorIndex.reload();
         }
+    }
+
+    public void syncVectorStore() {
+        vectorIndex.reload();
+        qdrant.rebuild(chunks.findAllReady());
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        workers.shutdownNow();
     }
 
     private KnowledgeDocument createProcessing(String filename, String type, String collection) {

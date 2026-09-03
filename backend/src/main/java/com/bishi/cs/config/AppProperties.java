@@ -9,6 +9,12 @@ public class AppProperties {
     private final Ollama ollama = new Ollama();
     private final Moonshot moonshot = new Moonshot();
     private final Rag rag = new Rag();
+    private final Embed embed = new Embed();
+    private final Qdrant qdrant = new Qdrant();
+    private final Redis redis = new Redis();
+    private final Admin admin = new Admin();
+    private final Cors cors = new Cors();
+    private final Security security = new Security();
 
     public Jwt getJwt() {
         return jwt;
@@ -28,6 +34,30 @@ public class AppProperties {
 
     public Rag getRag() {
         return rag;
+    }
+
+    public Embed getEmbed() {
+        return embed;
+    }
+
+    public Qdrant getQdrant() {
+        return qdrant;
+    }
+
+    public Redis getRedis() {
+        return redis;
+    }
+
+    public Admin getAdmin() {
+        return admin;
+    }
+
+    public Cors getCors() {
+        return cors;
+    }
+
+    public Security getSecurity() {
+        return security;
     }
 
     public static class Llm {
@@ -231,6 +261,172 @@ public class AppProperties {
 
         public void setEmptyRetrievalReply(String emptyRetrievalReply) {
             this.emptyRetrievalReply = emptyRetrievalReply;
+        }
+    }
+
+    public static class Embed {
+        private String apiKey = "";
+        private String baseUrl = "https://api.openai.com/v1";
+        private String model = "text-embedding-3-small";
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getModel() {
+            return model;
+        }
+
+        public void setModel(String model) {
+            this.model = model;
+        }
+    }
+
+    public static class Qdrant {
+        private String url = "";
+        private String collection = "knowledge_chunks";
+        private int timeoutSeconds = 10;
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public String getCollection() {
+            return collection;
+        }
+
+        public void setCollection(String collection) {
+            this.collection = collection;
+        }
+
+        public int getTimeoutSeconds() {
+            return timeoutSeconds;
+        }
+
+        public void setTimeoutSeconds(int timeoutSeconds) {
+            this.timeoutSeconds = timeoutSeconds;
+        }
+
+        public boolean enabled() {
+            return url != null && !url.isBlank();
+        }
+    }
+
+    public static class Redis {
+        private boolean enabled = false;
+        private String host = "localhost";
+        private int port = 6379;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+    }
+
+    public static class Admin {
+        private String email = "admin@company.com";
+        private String password = "Admin123!";
+        private boolean resetPassword = false;
+        private boolean logCredentials = true;
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public boolean isResetPassword() {
+            return resetPassword;
+        }
+
+        public void setResetPassword(boolean resetPassword) {
+            this.resetPassword = resetPassword;
+        }
+
+        public boolean isLogCredentials() {
+            return logCredentials;
+        }
+
+        public void setLogCredentials(boolean logCredentials) {
+            this.logCredentials = logCredentials;
+        }
+    }
+
+    public static class Cors {
+        private String origins = "http://localhost:*,http://127.0.0.1:*";
+
+        public String getOrigins() {
+            return origins;
+        }
+
+        public void setOrigins(String origins) {
+            this.origins = origins;
+        }
+    }
+
+    public static class Security {
+        private int loginMaxFailures = 8;
+        private int loginWindowMinutes = 15;
+
+        public int getLoginMaxFailures() {
+            return loginMaxFailures;
+        }
+
+        public void setLoginMaxFailures(int loginMaxFailures) {
+            this.loginMaxFailures = loginMaxFailures;
+        }
+
+        public int getLoginWindowMinutes() {
+            return loginWindowMinutes;
+        }
+
+        public void setLoginWindowMinutes(int loginWindowMinutes) {
+            this.loginWindowMinutes = loginWindowMinutes;
         }
     }
 }

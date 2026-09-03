@@ -15,12 +15,18 @@ import java.util.Set;
 @Service
 public class RetrievalService {
     private final VectorIndex vectorIndex;
+    private final QdrantClient qdrant;
     private final LlmGateway llm;
     private final VectorMath math;
     private final AppProperties props;
 
-    public RetrievalService(VectorIndex vectorIndex, LlmGateway llm, VectorMath math, AppProperties props) {
+    public RetrievalService(VectorIndex vectorIndex,
+                            QdrantClient qdrant,
+                            LlmGateway llm,
+                            VectorMath math,
+                            AppProperties props) {
         this.vectorIndex = vectorIndex;
+        this.qdrant = qdrant;
         this.llm = llm;
         this.math = math;
         this.props = props;
@@ -42,6 +48,13 @@ public class RetrievalService {
         String q = question == null ? "" : question.trim();
         float[] query = llm.embed(q);
         double threshold = similarityThreshold();
+        int k = props.getRag().getTopK();
+        if (qdrant.enabled() && qdrant.healthy()) {
+            List<RetrievedChunk> remote = qdrant.search(query, collections, k, threshold);
+            if (!remote.isEmpty()) {
+                return remote.size() > k ? new ArrayList<>(remote.subList(0, k)) : remote;
+            }
+        }
         Map<String, RetrievedChunk> byKey = new LinkedHashMap<>();
         for (VectorIndex.Entry chunk : vectorIndex.all()) {
             if (!collections.isEmpty() && !collections.contains(chunk.collection())) {
@@ -69,7 +82,6 @@ public class RetrievalService {
         }
         List<RetrievedChunk> scored = new ArrayList<>(byKey.values());
         scored.sort(Comparator.comparingDouble(RetrievedChunk::score).reversed());
-        int k = props.getRag().getTopK();
         if (scored.size() > k) {
             return new ArrayList<>(scored.subList(0, k));
         }

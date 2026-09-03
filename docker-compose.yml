@@ -1,4 +1,5 @@
-# 本机 3306 已被已有 MySQL 占用，项目库走 Docker 的 3307。
+# 一键部署：MySQL + Qdrant + Redis + 后端 + Nginx 前端
+# 使用前复制 .env.example 为 .env，并改掉 JWT_SECRET / ADMIN_PASSWORD / MOONSHOT_API_KEY
 services:
   mysql:
     image: docker.m.daocloud.io/library/mysql:8.0
@@ -7,8 +8,8 @@ services:
     ports:
       - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ai_cs_dev
-      MYSQL_DATABASE: ai_cs
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-ai_cs_dev}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ai_cs}
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - ai_cs_mysql_data:/var/lib/mysql
@@ -19,5 +20,82 @@ services:
       timeout: 5s
       retries: 20
 
+  qdrant:
+    image: docker.m.daocloud.io/qdrant/qdrant:v1.12.5
+    container_name: ai-cs-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - ai_cs_qdrant_data:/qdrant/storage
+
+  redis:
+    image: docker.m.daocloud.io/library/redis:7-alpine
+    container_name: ai-cs-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ai_cs_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ai-cs-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # Windows Docker 上 host.docker.internal 常解析出 IPv6，Java 优先 IPv6 会连不上本机 Ollama
+      JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ai_cs}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ai_cs_dev}
+      QDRANT_URL: http://qdrant:6333
+      REDIS_ENABLED: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # 本机 Ollama（Windows Docker Desktop）
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      APP_ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@company.com}
+      APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-SetAStrongAdminPass1!}
+      APP_ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
+      APP_ADMIN_LOG_CREDENTIALS: "false"
+      ADMIN_LOG_CREDENTIALS: "false"
+      ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ai-cs-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
 volumes:
   ai_cs_mysql_data:
+  ai_cs_qdrant_data:
+  ai_cs_redis_data:

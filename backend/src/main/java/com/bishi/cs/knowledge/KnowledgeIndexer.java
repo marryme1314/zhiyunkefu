@@ -3,6 +3,8 @@ package com.bishi.cs.knowledge;
 import com.bishi.cs.common.ApiException;
 import com.bishi.cs.config.AppProperties;
 import com.bishi.cs.llm.LlmGateway;
+import com.bishi.cs.rag.KnowledgeRouter;
+import com.bishi.cs.rag.QdrantClient;
 import com.bishi.cs.rag.VectorIndex;
 import com.bishi.cs.rag.VectorMath;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class KnowledgeIndexer {
     private final LlmGateway llm;
     private final VectorMath math;
     private final VectorIndex vectorIndex;
+    private final QdrantClient qdrant;
     private final AppProperties props;
 
     public KnowledgeIndexer(KnowledgeDocumentRepository documents,
@@ -25,12 +28,14 @@ public class KnowledgeIndexer {
                             LlmGateway llm,
                             VectorMath math,
                             VectorIndex vectorIndex,
+                            QdrantClient qdrant,
                             AppProperties props) {
         this.documents = documents;
         this.chunks = chunks;
         this.llm = llm;
         this.math = math;
         this.vectorIndex = vectorIndex;
+        this.qdrant = qdrant;
         this.props = props;
     }
 
@@ -45,6 +50,7 @@ public class KnowledgeIndexer {
                 return;
             }
             chunks.deleteByDocumentId(doc.getId());
+            qdrant.deleteDocument(doc.getId());
             List<float[]> vectors = llm.embedAll(pieces);
             for (int i = 0; i < pieces.size(); i++) {
                 KnowledgeChunk chunk = new KnowledgeChunk();
@@ -53,7 +59,15 @@ public class KnowledgeIndexer {
                 chunk.setContent(pieces.get(i));
                 chunk.setEmbeddingJson(math.toJson(vectors.get(i)));
                 chunk.setCreatedAt(LocalDateTime.now());
-                chunks.save(chunk);
+                KnowledgeChunk saved = chunks.save(chunk);
+                qdrant.upsert(
+                        saved.getId(),
+                        doc.getId(),
+                        doc.getFilename(),
+                        KnowledgeRouter.normalize(doc.getCollection()),
+                        saved.getContent(),
+                        vectors.get(i)
+                );
             }
             doc.setStatus("READY");
             doc.setErrorMessage(null);
@@ -66,6 +80,7 @@ public class KnowledgeIndexer {
 
     private void fail(KnowledgeDocument doc, String message) {
         chunks.deleteByDocumentId(doc.getId());
+        qdrant.deleteDocument(doc.getId());
         doc.setStatus("FAILED");
         doc.setErrorMessage(message);
         documents.save(doc);

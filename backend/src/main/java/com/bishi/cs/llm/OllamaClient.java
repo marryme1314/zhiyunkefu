@@ -41,9 +41,11 @@ public class OllamaClient {
 
     public boolean pingEmbed() {
         try {
-            embed("ping", 2);
+            // 冷启动拉模型可能较慢，给足超时，避免误判为不可用
+            embed("ping", 30);
             return true;
         } catch (Exception e) {
+            System.err.println("[WARN] Ollama Embedding ping 详情: " + e.getMessage());
             return false;
         }
     }

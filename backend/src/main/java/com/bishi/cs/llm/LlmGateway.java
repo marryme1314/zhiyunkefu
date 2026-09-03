@@ -13,15 +13,21 @@ public class LlmGateway {
     private final AppProperties props;
     private final OllamaClient ollama;
     private final MoonshotClient moonshot;
+    private final OpenAiCompatibleEmbedClient openaiEmbed;
     private final LocalEmbedding local;
 
     /** Process-lifetime backend so stored vectors stay the same dimension. */
     private volatile String embedBackend;
 
-    public LlmGateway(AppProperties props, OllamaClient ollama, MoonshotClient moonshot, LocalEmbedding local) {
+    public LlmGateway(AppProperties props,
+                      OllamaClient ollama,
+                      MoonshotClient moonshot,
+                      OpenAiCompatibleEmbedClient openaiEmbed,
+                      LocalEmbedding local) {
         this.props = props;
         this.ollama = ollama;
         this.moonshot = moonshot;
+        this.openaiEmbed = openaiEmbed;
         this.local = local;
     }
 
@@ -49,6 +55,20 @@ public class LlmGateway {
         if ("local".equals(mode)) {
             embedBackend = "local";
             return embedBackend;
+        }
+        if (("openai".equals(mode) || "auto".equals(mode)) && openaiEmbed.configured()) {
+            try {
+                if (!openaiEmbed.ping()) {
+                    throw new ApiException(502, "Embedding API ping 失败");
+                }
+                embedBackend = "openai";
+                return embedBackend;
+            } catch (Exception e) {
+                System.err.println("[WARN] OpenAI 兼容 Embedding 不可用: " + e.getMessage());
+                if ("openai".equals(mode)) {
+                    throw e instanceof RuntimeException re ? re : new ApiException(502, e.getMessage());
+                }
+            }
         }
         if ("moonshot".equals(mode) && hasMoonshotKey()) {
             try {
@@ -78,11 +98,18 @@ public class LlmGateway {
         return resolveEmbedBackend();
     }
 
+    public String peekEmbedBackend() {
+        return embedBackend == null ? "unresolved" : embedBackend;
+    }
+
     public List<float[]> embedAll(List<String> texts) {
         if (texts == null || texts.isEmpty()) {
             return List.of();
         }
         String backend = resolveEmbedBackend();
+        if ("openai".equals(backend)) {
+            return openaiEmbed.embedAll(texts);
+        }
         if ("moonshot".equals(backend)) {
             return moonshot.embedAll(texts);
         }

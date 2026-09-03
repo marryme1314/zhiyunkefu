@@ -38,16 +38,18 @@
 
 ![管理后台](docs/screenshots/admin.png)
 
-## 快速启动（Windows）
+## 快速启动
 
-1. 复制 `.env.example` 为 `.env`，填写 `MYSQL_*`、`JWT_SECRET`；使用月之暗面对话时填写 `MOONSHOT_API_KEY`
-2. Docker 可用时双击 `初始化数据库.bat`（MySQL **3307** / `ai_cs` / `ai_cs_dev`）
-3. 语义向量：安装并启动 Ollama，执行 `ollama pull nomic-embed-text`（或使用仓库内相关脚本）
-4. 双击 `启动后端.bat`、`启动前端.bat`，或 `一键启动.bat`
-5. 打开 http://localhost:5173  
-   管理员：`admin@company.com` / `Admin123!`
+**上线形态（Docker）：** 复制 `.env.example` → `.env`，改掉 `JWT_SECRET`、`ADMIN_PASSWORD`、`MOONSHOT_API_KEY`；建议先 `启动Ollama.bat` 并拉取 `nomic-embed-text`。Windows 可双击 `一键部署.bat`（会本机打包 jar/前端再 compose 构建，适配国内镜像源）。访问 http://localhost 。健康检查：`/api/health`。
 
-也可用命令行：
+**本机开发：**
+
+1. `.env` 填写 `MYSQL_*`、`JWT_SECRET`；对话填写 `MOONSHOT_API_KEY`
+2. 双击 `初始化数据库.bat`（只起 MySQL **3307**）
+3. 可选：Ollama + `nomic-embed-text`，或配置 `EMBED_API_KEY`
+4. `启动后端.bat`、`启动前端.bat`，打开 http://localhost:5173
+
+本地开发默认管理员：`admin@company.com` / `Admin123!`。Docker `prod` **禁止**该默认口令。
 
 ```bash
 cd backend && mvn spring-boot:run
@@ -56,9 +58,10 @@ cd frontend && npm install && npm run dev
 
 ## 技术说明
 
-- 对话默认 Moonshot；也可切换本机 Ollama
-- Embedding 优先 Ollama `nomic-embed-text`，不可用则回退本机词法向量
-- 向量存 MySQL，进程内做余弦 Top-K 检索（适合中小规模知识库）
+- 对话默认 Moonshot；可切本机 Ollama
+- Embedding：`auto` 时优先 OpenAI 兼容 API，其次 Ollama，最后词法向量
+- 向量库：生产用 **Qdrant**；未配置时用 MySQL 存向量 + 进程内余弦（并作 Qdrant 故障回退）
+- Redis：生产用于登录失败限流；未启用时用进程内计数
 
 ## 测试
 

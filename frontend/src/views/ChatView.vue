@@ -55,11 +55,14 @@
               <span v-else-if="m.status === 'failed'" class="tag bad">失败</span>
               <span v-else-if="m.status === 'stopped'" class="tag warn">已中断</span>
             </div>
-            <div class="text">
-              <template v-if="m.content">{{ m.content }}</template>
-              <template v-else-if="m.status === 'streaming'"><span class="blink" /></template>
-              <template v-else-if="m.status === 'failed'">{{ m.error || '生成失败，可重试' }}</template>
-            </div>
+            <div
+              v-if="m.content && m.role === 'ASSISTANT'"
+              class="text md"
+              v-html="renderMarkdown(m.content)"
+            />
+            <div v-else-if="m.content" class="text">{{ m.content }}</div>
+            <div v-else-if="m.status === 'streaming'" class="text"><span class="blink" /></div>
+            <div v-else-if="m.status === 'failed'" class="text">{{ m.error || '生成失败，可重试' }}</div>
 
             <details
               v-if="m.role === 'ASSISTANT' && m.sources && m.sources.length"
@@ -147,6 +150,7 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { request, streamChat, type SourceItem } from '../api'
 import { askConfirm } from '../composables/confirm'
+import { renderMarkdown } from '../markdown'
 
 type Session = { id: number; title: string }
 type MsgStatus = 'ok' | 'streaming' | 'failed' | 'stopped'
@@ -725,6 +729,50 @@ onUnmounted(() => stopGenerating())
   white-space: pre-wrap;
   line-height: 1.7;
   font-size: 15px;
+}
+.text.md {
+  white-space: normal;
+}
+.text.md :deep(p) { margin: 0 0 0.65em; }
+.text.md :deep(p:last-child) { margin-bottom: 0; }
+.text.md :deep(h1),
+.text.md :deep(h2),
+.text.md :deep(h3) {
+  margin: 0.8em 0 0.4em;
+  font-size: 1.05em;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.text.md :deep(ul) {
+  margin: 0.4em 0 0.7em;
+  padding-left: 1.25em;
+}
+.text.md :deep(li) { margin: 0.2em 0; }
+.text.md :deep(blockquote) {
+  margin: 0.5em 0;
+  padding: 0.35em 0.8em;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+.text.md :deep(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  background: #f1f5f9;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+}
+.text.md :deep(pre) {
+  margin: 0.6em 0;
+  padding: 10px 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  overflow: auto;
+}
+.text.md :deep(pre code) {
+  background: transparent;
+  padding: 0;
+  color: inherit;
 }
 .turn.user .text {
   display: inline-block;

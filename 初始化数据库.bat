@@ -23,7 +23,7 @@ goto waitdocker
 
 :up
 echo Starting MySQL container (port 3307, database ai_cs)...
-"C:\Program Files\Docker\Docker\resources\bin\docker.exe" compose -f "%~dp0docker-compose.yml" up -d
+"C:\Program Files\Docker\Docker\resources\bin\docker.exe" compose -f "%~dp0docker-compose.yml" up -d mysql
 if errorlevel 1 (
   echo docker compose failed
   pause

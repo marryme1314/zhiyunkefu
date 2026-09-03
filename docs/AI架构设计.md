@@ -63,7 +63,7 @@ flowchart TD
 | 相似度阈值 | 配置默认约 0.18；语义 Embedding（Ollama）时不低于 0.28 | 过滤「看起来有点像但无关」的切片；空命中宁可不答 |
 | 空结果 | **不调用** Chat | 防幻觉 |
 | 短问兜底 | 阈值未命中时用原文 `contains` | 「退款」等极短问向量分可能偏低 |
-| 存储形态 | MySQL `embedding_json` + 进程内余弦 | 体量小、部署简单；生产可换 Faiss/Chroma 而不改 RAG 逻辑骨架 |
+| 存储形态 | Qdrant 余弦检索；MySQL 仍保存切片与 `embedding_json` 作备份/回退 | 上线可水平扩展检索；本地开发可不启 Qdrant |
 
 ## 意图与多知识库
 

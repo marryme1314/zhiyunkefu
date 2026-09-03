@@ -1,0 +1,15 @@
+# 可选：需要在容器内完整编译时使用（依赖 DaoCloud 上的 maven/node 镜像）
+# docker build -f Dockerfile.multistage ...
+FROM docker.m.daocloud.io/library/maven:3.9.9-eclipse-temurin-17 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src src
+RUN mvn -q -DskipTests package
+
+FROM docker.m.daocloud.io/library/eclipse-temurin:17-jre
+WORKDIR /app
+RUN useradd --system --create-home app || true
+COPY --from=build /app/target/*.jar app.jar
+USER app
+EXPOSE 8080
+ENTRYPOINT ["java","-XX:+UseContainerSupport","-XX:MaxRAMPercentage=75.0","-jar","app.jar"]

@@ -11,6 +11,16 @@
 
 错误时 `code` 为 HTTP 语义状态码，`message` 为原因。
 
+## 0. 健康检查（无需登录）
+
+`GET /api/health`
+
+```json
+{ "code": 0, "data": { "status": "UP", "mysql": "UP", "embed": "ollama", "qdrant": "UP" } }
+```
+
+`qdrant` 为 `DISABLED` 表示未配置向量库地址，检索走内存回退。
+
 ## 1. 注册
 
 `POST /api/auth/register`
